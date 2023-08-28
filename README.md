@@ -8,7 +8,7 @@ This is small example of how HTTP-requests can be filtered using openresty+lua.
 
 All the project teams has the same alertmanager. This happened to be very convinient for monitoring team to collect and route all the alerts from different Prometheuses in one HA cluster of Alertmanagers.
 
-Theese Alertmanagers has no authorization proxies or even basic auth. Monitoring team wasn't concerned much about it for security reasons, but they wanted to minimize consequences in case of human error.
+These Alertmanagers has no authorization proxies or even basic auth. Monitoring team wasn't concerned much about it for security reasons, but they wanted to minimize consequences in case of human error.
 
 They wanted to make custom rules about "which silences could be created and how **wide** can they be".
 
@@ -181,5 +181,6 @@ HTTP/1.1 405 Not Allowed
 Rejecting creating the silence because project_matcher_is_regex.<br><a href="http://wiki.company.com/silences#project_matcher_is_regex">Check the docs</a>
 ```
 
-Although Alertmanager web-interface follows redirects as well as `http --follow`, it doesn't show you the error body, so in order to read error decription and got to link you will need to hit F12 and check the response:  
+Although Alertmanager web-interface follows redirects as well as `http --follow`, it doesn't show you the error body.  
+In order to read error decription and got to link you will need to hit F12 and check the response:  
 ![rejected silence](./images/rejected_silence.png)
