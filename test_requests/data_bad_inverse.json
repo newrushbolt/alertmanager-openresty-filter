@@ -1,0 +1,14 @@
+{
+    "comment": "new",
+    "createdBy": "best_admin",
+    "endsAt": "2023-08-29T00:52:27.596Z",
+    "matchers": [
+        {
+            "isEqual": false,
+            "isRegex": false,
+            "name": "project",
+            "value": "core"
+        }
+    ],
+    "startsAt": "2023-08-26T00:53:14.613Z"
+}

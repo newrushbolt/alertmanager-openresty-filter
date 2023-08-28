@@ -1,0 +1,15 @@
+---
+
+version: "3.9"
+services:
+  proxy:
+    image: openresty/openresty:1.21.4.1-0-jammy
+    volumes:
+      - "$PWD/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf"
+      - "$PWD/verify_silence.lua:/usr/local/openresty/nginx/conf/verify_silence.lua"
+    ports:
+      - 28080:80
+    links:
+     - alertmanager
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
