@@ -1,18 +1,17 @@
-# alertmanager-openresty-filter
 
 This is small example of how HTTP-requests can be filtered using openresty+lua.
 
-## Global alertmanager for multiple project teams
+# Global alertmanager for multiple project teams
 
-### Problem
+## Problem
 
 All the project teams has the same alertmanager. This happened to be very convinient for monitoring team to collect and route all the alerts from different Prometheuses in one HA cluster of Alertmanagers.
 
 These Alertmanagers has no authorization proxies or even basic auth. Monitoring team wasn't concerned much about it for security reasons, but they wanted to minimize consequences in case of human error.
 
-They wanted to make custom rules about "which silences could be created and how **wide** can they be".
+They wanted to make custom rules and limit "how **wide** can silinces be".
 
-### Solution
+## Silence API
 
 Okay, what are those silences anyway?  
 Lets have a look at [OpenAPI spec for Alertmanager](https://github.com/prometheus/alertmanager/blob/v0.25.0/api/v2/openapi.yaml).  
@@ -91,6 +90,9 @@ definitions:
 ```
 
 Ok, that's all we need to start. We'll be validating field `matchers` for POST request `/api/v2/silences`.  
+
+## Our projects labels
+
 Let's go and query promxy that tooks into all the project Prometheuses:
 ```
 > count(ALERTS) by (alertname, project)
@@ -108,7 +110,9 @@ Ok, so for now we define our checks for creating alerts that way:
 * `project` label cannot be regexp
 * `project` label cannot be inversed match
 
-Let's try to implement them in simpliest lua filter:
+## Implementation
+
+Let's try to implement checks in lua-script:
 ```lua
 if data then
     local data_json = cjson.decode(data)
@@ -149,8 +153,16 @@ end
 ngx.exit(ngx.OK)
 ```
 
+We should also create nginx location to handle error redirects:
+```
+location ~ /errors/([_a-z]+) {
+    return 405 "Rejecting creating the silence because $1.<br> http://wiki.company.com/silences#$1";
+}
+```
 Check the full script `verify_silence.lua` and config `nginx.conf` for more details.
 
+
+## Testing
 
 Lets start testing:
 ```
@@ -168,19 +180,38 @@ What about "bad" silences?
 $ http --follow POST 127.0.0.1:28080/api/v2/silences < test_requests/data_bad_inverse.json
 HTTP/1.1 405 Not Allowed
 
-Rejecting creating the silence because project_matcher_is_inversed.<br><a href="http://wiki.company.com/silences#project_matcher_is_inversed">Check the docs</a>
+Rejecting creating the silence because project_matcher_is_inversed.
+<a href="http://wiki.company.com/silences#project_matcher_is_inversed">Check the docs</a>
 
 $ http --follow POST 127.0.0.1:28080/api/v2/silences < test_requests/data_bad_multiple.json
 HTTP/1.1 405 Not Allowed
 
-Rejecting creating the silence because several_project_matchers.<br><a href="http://wiki.company.com/silences#several_project_matchers">Check the docs</a>
+Rejecting creating the silence because several_project_matchers.
+<a href="http://wiki.company.com/silences#several_project_matchers">Check the docs</a>
 
 $ http --follow POST 127.0.0.1:28080/api/v2/silences < test_requests/data_bad_regex.json
 HTTP/1.1 405 Not Allowed
 
-Rejecting creating the silence because project_matcher_is_regex.<br><a href="http://wiki.company.com/silences#project_matcher_is_regex">Check the docs</a>
+Rejecting creating the silence because project_matcher_is_regex.
+<a href="http://wiki.company.com/silences#project_matcher_is_regex">Check the docs</a>
 ```
 
 Although Alertmanager web-interface follows redirects as well as `http --follow`, it doesn't show you the error body.  
 In order to read error decription and got to link you will need to hit F12 and check the response:  
 ![rejected silence](./images/rejected_silence.png)
+
+
+## Results
+
+So, this solution indeed solves the original problem, but sure it has pros and cons.
+
+**Pros**
+
+* Script for openresty that doesn't require reverse-proxy implementation
+* Script gives you flexible and extendable logic of filtering
+* Script could be linted\tested in CI the same way as other software
+
+**Cons**
+
+* Lua is pretty weird language it terms of syntax and lack of standart function
+* Vanilla Alertmanager web-interface is unable to show our error message, need to use "Dev tools" to check it
