@@ -1,8 +1,6 @@
 
 This is small example of how HTTP-requests can be filtered using openresty+lua.
 
-[[__TOC__]]
-
 # Global alertmanager for multiple project teams
 
 ## Problem
