@@ -205,3 +205,15 @@ In order to read error decription and got to link you will need to hit F12 and c
 
 ## Results
 
+So, this solution indeed solves the original problem, but sure it has pros and cons.
+
+**Pros**
+
+* Script for openresty that doesn't require reverse-proxy implementation
+* Script gives you flexible and extendable logic of filtering
+* Script could be linted\tested in CI the same way as other software
+
+**Cons**
+
+* Lua is pretty weird language it terms of syntax and lack of standart function
+* Vanilla Alertmanager web-interface is unable to show our error message, need to use "Dev tools" to check it
